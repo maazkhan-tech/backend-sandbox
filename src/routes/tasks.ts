@@ -5,27 +5,41 @@ import {
   updateTask,
   deleteTask,
   getTasks,
-  isValidCreateInput,
-  isValidUpdateInput,
+  validateUpdateInput,
+  isValidTaskInput,
 } from "../services/tasks.js";
 const router = Router();
 
 // GET /tasks
 router.get("/", (_req, res) => {
-  res.status(200).json({ success: true, data: getTasks() });
+  const { completed } = _req.query;
+  if (
+    completed !== undefined &&
+    completed !== "true" &&
+    completed !== "false"
+  ) {
+    return res.status(400).json({
+      success: false,
+      error: {
+        message: "completed must be 'true' or 'false'",
+      },
+    });
+  }
+  const filter = completed === undefined ? undefined : completed === "true";
+  res.status(200).json({ success: true, data: getTasks(filter) });
 });
 
 // POST /tasks
 router.post("/", (req, res) => {
-  if (!isValidCreateInput(req.body)) {
+  const { valid, message } = isValidTaskInput(req.body);
+  if (!valid) {
     return res.status(400).json({
       success: false,
-      error: { message: "Invalid task payload" },
+      error: { message },
     });
   }
-
-  const task = createTask(req.body);
-
+  const { title, description } = req.body;
+  const task = createTask({ title, description });
   res.status(201).json({ success: true, data: task });
 });
 
@@ -53,10 +67,11 @@ router.get("/:id", (req, res) => {
 
 // PATCH /tasks/:id
 router.patch("/:id", (req, res) => {
-  if (!isValidUpdateInput(req.body)) {
+  const { valid, message } = validateUpdateInput(req.body);
+  if (!valid) {
     return res.status(400).json({
       success: false,
-      error: { message: "Invalid update payload" },
+      error: { message },
     });
   }
   const id = Number(req.params.id);

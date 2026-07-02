@@ -1,4 +1,3 @@
-
 import fs from "fs";
 
 export interface Task {
@@ -10,14 +9,18 @@ export interface Task {
   updatedAt: Date;
 }
 
-export type CreateTaskInput = Omit<Task, "id" | "createdAt" | "updatedAt">;
-export type UpdateTaskInput = Partial<CreateTaskInput>;
-
-export interface ApiResponse<T> {
-  data: T;
-  success: boolean;
-  error?: string;
+export interface ValidationResult {
+  valid: boolean;
+  message?: string;
 }
+
+export type CreateTaskInput = Omit<
+  Task,
+  "id" | "completed" | "createdAt" | "updatedAt"
+>;
+export type UpdateTaskInput = Partial<CreateTaskInput> & {
+  completed?: boolean;
+};
 
 const TASKS_FILE = "tasks.json";
 
@@ -41,15 +44,14 @@ function readTasks(): Task[] {
 }
 
 function writeTasks(tasks: Task[]): void {
-  fs.writeFile(TASKS_FILE, JSON.stringify(tasks, null, 2), (err) => {
-    if (err) {
-      console.error("Error writing tasks:", err);
-    }
-  });
+  fs.writeFileSync(TASKS_FILE, JSON.stringify(tasks, null, 2));
 }
-
-export function getTasks(): Task[] {
-  return readTasks();
+export function getTasks(done?: boolean): Task[] {
+  const tasks = readTasks();
+  if (done === undefined) {
+    return tasks;
+  }
+  return tasks.filter((task) => task.completed === done);
 }
 
 export function createTask(input: CreateTaskInput): Task {
@@ -64,7 +66,7 @@ export function createTask(input: CreateTaskInput): Task {
     id: nextId,
     title: input.title,
     description: input.description,
-    completed: input.completed,
+    completed: false,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -75,15 +77,15 @@ export function createTask(input: CreateTaskInput): Task {
   return newTask;
 }
 
-export function findTask(id: Number): Task | undefined {
+export function findTask(id: number): Task | undefined {
   const tasks = readTasks();
 
   return tasks.find((task) => task.id === id);
 }
 
 export function updateTask(
-  id: Number,
-  input: UpdateTaskInput
+  id: number,
+  input: UpdateTaskInput,
 ): Task | undefined {
   const tasks = readTasks();
 
@@ -112,7 +114,7 @@ export function updateTask(
   return task;
 }
 
-export function deleteTask(id: Number): boolean {
+export function deleteTask(id: number): boolean {
   const tasks = readTasks();
 
   const index = tasks.findIndex((task) => task.id === id);
@@ -128,37 +130,52 @@ export function deleteTask(id: Number): boolean {
   return true;
 }
 
-export function isValidTaskInput(
-  input: unknown
-): input is CreateTaskInput {
-  return (
-    typeof input === "object" &&
-    input !== null &&
-    typeof (input as CreateTaskInput).title === "string" &&
-    ((input as CreateTaskInput).description === undefined ||
-      typeof (input as CreateTaskInput).description === "string") &&
-    typeof (input as CreateTaskInput).completed === "boolean"
-  );
+export function isValidTaskInput(input: unknown): ValidationResult {
+  if (typeof input !== "object" || input === null) {
+    return { valid: false, message: "Request body must be a JSON object" };
+  }
+
+  const body = input as Record<string, unknown>;
+
+  if (typeof body.title !== "string" || body.title.trim().length === 0) {
+    return {
+      valid: false,
+      message: "title is required and must be a non-empty string",
+    };
+  }
+
+  if (body.description !== undefined && typeof body.description !== "string") {
+    return { valid: false, message: "description must be a string" };
+  }
+
+  return { valid: true };
 }
 
-export function isValidCreateInput(
-  input: unknown
-): input is CreateTaskInput {
-  return isValidTaskInput(input);
+export function validateUpdateInput(input: unknown): ValidationResult {
+  if (typeof input !== "object" || input === null) {
+    return { valid: false, message: "Request body must be a JSON object" };
+  }
+
+  const body = input as Record<string, unknown>;
+
+  const hasTitle = body.title !== undefined;
+  const hasDone = body.completed !== undefined;
+
+  if (!hasTitle && !hasDone) {
+    return { valid: false, message: "Provide at least title or completed" };
+  }
+
+  if (
+    hasTitle &&
+    (typeof body.title !== "string" ||
+      (body.title as string).trim().length === 0)
+  ) {
+    return { valid: false, message: "title must be a non-empty string" };
+  }
+
+  if (hasDone && typeof body.completed !== "boolean") {
+    return { valid: false, message: "completed must be a boolean" };
+  }
+
+  return { valid: true };
 }
-
-export function isValidUpdateInput(
-  input: unknown
-): input is UpdateTaskInput {
-  return (
-    typeof input === "object" &&
-    input !== null &&
-    (input as UpdateTaskInput).title === undefined ||
-    typeof (input as UpdateTaskInput).title === "string" &&
-    ((input as UpdateTaskInput).description === undefined ||
-      typeof (input as UpdateTaskInput).description === "string") &&
-    ((input as UpdateTaskInput).completed === undefined ||
-      typeof (input as UpdateTaskInput).completed === "boolean")
-  );
-} 
-
