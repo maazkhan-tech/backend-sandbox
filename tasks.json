@@ -2,15 +2,9 @@
   {
     "id": 1,
     "title": "Go to Gym",
-    "completed": false,
-    "createdAt": "2026-07-02T04:17:30.669Z",
-    "updatedAt": "2026-07-02T04:17:30.669Z"
-  },
-  {
-    "id": 2,
-    "title": "Go to College",
+    "description": "I will go to Gym",
     "completed": true,
-    "createdAt": "2026-07-02T04:18:34.513Z",
-    "updatedAt": "2026-07-02T04:18:34.513Z"
+    "createdAt": "2026-07-02T13:42:32.347Z",
+    "updatedAt": "2026-07-02T13:43:46.802Z"
   }
 ]
