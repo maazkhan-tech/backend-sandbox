@@ -9,10 +9,8 @@ export interface Task {
   updatedAt: Date;
 }
 
-export interface ValidationResult {
-  valid: boolean;
-  message?: string;
-}
+export type ValidationResult =
+  { valid: true } | { valid: false; message: string };
 
 export type CreateTaskInput = Omit<
   Task,
