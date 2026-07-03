@@ -1,5 +1,5 @@
 import express from "express";
-import tasksRouter from "./routes/tasks.js";
+import tasksRouter from "./routes/tasks.routes.js";
 import morgan from "morgan";
 import cors from "cors";
 import { errorHandler } from "./middleware/errorHandler.js";

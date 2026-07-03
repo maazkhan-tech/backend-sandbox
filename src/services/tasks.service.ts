@@ -1,24 +1,64 @@
+import type {
+  CreateTaskInput,
+  Task,
+  UpdateTaskInput,
+  ValidationResult,
+} from "../types/index.js";
 import fs from "fs";
 
-export interface Task {
-  id: number;
-  title: string;
-  description?: string | undefined;
-  completed: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+// Validation functions for task inputs
+
+export function validateCreateInput(input: unknown): ValidationResult {
+  if (typeof input !== "object" || input === null) {
+    return { valid: false, message: "Request body must be a JSON object" };
+  }
+
+  const body = input as Record<string, unknown>;
+
+  if (typeof body.title !== "string" || body.title.trim().length === 0) {
+    return {
+      valid: false,
+      message: "title is required and must be a non-empty string",
+    };
+  }
+
+  if (body.description !== undefined && typeof body.description !== "string") {
+    return { valid: false, message: "description must be a string" };
+  }
+
+  return { valid: true };
 }
 
-export type ValidationResult =
-  { valid: true } | { valid: false; message: string };
+export function validateUpdateInput(input: unknown): ValidationResult {
+  if (typeof input !== "object" || input === null) {
+    return { valid: false, message: "Request body must be a JSON object" };
+  }
 
-export type CreateTaskInput = Omit<
-  Task,
-  "id" | "completed" | "createdAt" | "updatedAt"
->;
-export type UpdateTaskInput = Partial<CreateTaskInput> & {
-  completed?: boolean;
-};
+  const body = input as Record<string, unknown>;
+
+  const hasTitle = body.title !== undefined;
+  const hasDone = body.completed !== undefined;
+
+  if (!hasTitle && !hasDone) {
+    return { valid: false, message: "Provide at least title or completed" };
+  }
+
+  if (
+    hasTitle &&
+    (typeof body.title !== "string" ||
+      (body.title as string).trim().length === 0)
+  ) {
+    return { valid: false, message: "title must be a non-empty string" };
+  }
+
+  if (hasDone && typeof body.completed !== "boolean") {
+    return { valid: false, message: "completed must be a boolean" };
+  }
+
+  return { valid: true };
+}
+
+// File operations for tasks
 
 const TASKS_FILE = "tasks.json";
 
@@ -75,7 +115,7 @@ export function createTask(input: CreateTaskInput): Task {
   return newTask;
 }
 
-export function findTask(id: number): Task | undefined {
+export function findTaskById(id: number): Task | undefined {
   const tasks = readTasks();
 
   return tasks.find((task) => task.id === id);
@@ -126,54 +166,4 @@ export function deleteTask(id: number): boolean {
   writeTasks(tasks);
 
   return true;
-}
-
-export function isValidTaskInput(input: unknown): ValidationResult {
-  if (typeof input !== "object" || input === null) {
-    return { valid: false, message: "Request body must be a JSON object" };
-  }
-
-  const body = input as Record<string, unknown>;
-
-  if (typeof body.title !== "string" || body.title.trim().length === 0) {
-    return {
-      valid: false,
-      message: "title is required and must be a non-empty string",
-    };
-  }
-
-  if (body.description !== undefined && typeof body.description !== "string") {
-    return { valid: false, message: "description must be a string" };
-  }
-
-  return { valid: true };
-}
-
-export function validateUpdateInput(input: unknown): ValidationResult {
-  if (typeof input !== "object" || input === null) {
-    return { valid: false, message: "Request body must be a JSON object" };
-  }
-
-  const body = input as Record<string, unknown>;
-
-  const hasTitle = body.title !== undefined;
-  const hasDone = body.completed !== undefined;
-
-  if (!hasTitle && !hasDone) {
-    return { valid: false, message: "Provide at least title or completed" };
-  }
-
-  if (
-    hasTitle &&
-    (typeof body.title !== "string" ||
-      (body.title as string).trim().length === 0)
-  ) {
-    return { valid: false, message: "title must be a non-empty string" };
-  }
-
-  if (hasDone && typeof body.completed !== "boolean") {
-    return { valid: false, message: "completed must be a boolean" };
-  }
-
-  return { valid: true };
 }
