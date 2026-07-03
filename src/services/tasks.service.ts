@@ -5,6 +5,7 @@ import type {
   ValidationResult,
 } from "../types/index.js";
 import fs from "fs";
+import { config } from "../config/index.js";
 
 // Validation functions for task inputs
 
@@ -60,8 +61,7 @@ export function validateUpdateInput(input: unknown): ValidationResult {
 
 // File operations for tasks
 
-const TASKS_FILE = "tasks.json";
-
+const TASKS_FILE = config.tasksFile;
 function readTasks(): Task[] {
   try {
     if (!fs.existsSync(TASKS_FILE)) {

@@ -1,4 +1,7 @@
 node_modules/
 package-lock.json/
 dist/
-tasks.json/
+tasks.json
+.env
+.env.local
+.env.production
